@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Welcome</title>
+  
+
+    <title>Multi-modal Distance and Carbon Emissions Calculator</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+<style>
+    body {
+      background-image: url('https://img.freepik.com/free-photo/luxury-plain-green-gradient-abstract-studio-background-empty-room-with-space-your-text-picture_1258-102077.jpg?w=1380&t=st=1682527312~exp=1682527912~hmac=e648eff1c39840065e98cb823d454c2f3fab3508e94e332b4890bc9fdac92de8'); 
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      background-size: cover;
+     
+    }
+  </style> 
+
+
+    
+    <style>
+           h2{
+  margin: 20px;
+
+ }
+   h6{
+    margin: 20px;
+   }
+
+       #start{
+        margin: 20px;
+       
+       }
+      .map {
+        height: 500px;
+        width: 80%;
+        margin-bottom: 20px;
+        margin: 20px;
+      }
+      th,
+      td {
+        border: 1px solid #000;
+        padding: 8px;
+        text-align: left;
+      }
+      th {
+        background-color: #f2f2f2;
+        font-weight: bold;
+      }
+      .parent {
+        /* border: 1px solid black; */
+        margin: 1rem;
+        padding: 2rem 2rem;
+        /* text-align: center; */
+      }
+      .child {
+        display: inline-block;
+        /* border: 1px solid red; */
+        padding: 1rem 1rem;
+        vertical-align: middle;
+      }
+  
+  
+      .navbar {
+      display: flex;
+      background-color: #333;
+      padding: 10px;
+  }
+  
+  .navbar a {
+      color: white;
+      text-decoration: none;
+      padding: 10px;
+      margin-right: 10px;
+  }
+  
+  .navbar a:hover {
+      background-color: #555;
+      color: white;
+  }
+
+  .result-card {
+  background-color: #f1f1f1;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  margin-bottom: 16px;
+  padding: 16px;
+}
+
+.result-card h3 {
+  margin-top: 0;
+}
+
+#cards-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-around;
+}
+
+.card {
+  /* Style the individual cards here */
+  width: calc(25% - 20px);; /* Set a width for the cards */
+  box-sizing: border-box;
+  margin-bottom: 10px;
+  background-color: #f1f1f1;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  margin-bottom: 16px;
+  padding: 16px;
+}
+
+
+.warning {
+      color: red;
+      display: none;
+    }
+
+    </style>
+  </head>
+  
+  <body>
+    <%- include('header') %>
+      <h2 style="font-family:'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif">Welcome, <%= user.first_name %> <%= user.last_name %>!</h2>
+      <h6>You are logged in as a User.</h6>
+      <!-- <p>Username: <%= user.user_name %></p>
+      <p>Email: <%= user.email %></p>
+      <p>Mobile Number: <%= user.mob_no %></p>
+      <p>Role: <%= user.role %></p> -->
+    <h2 style="font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif">Multi-modal Distance and Carbon Emissions Calculator</h2>
+    <input id="start" placeholder="Enter Source Address" type="text" required>
+    <input id="destination" placeholder="Enter Destination Address" type="text" required>
+    <span class="warning" id="warning-message">Please enter some text.</span>
+    <button onclick="calculateDistances()">Calculate</button>
+    <div class='parent'>
+      <div class='child' id="results"></div>
+      <div class='child' id="labels"></div>
+    </div>
+    <h3 style="margin: 20px; font-family: Georgia, 'Times New Roman', Times, serif; font-style: italic;">Best Route is displayed based on carbon emissions and time taken between four modes of transport</h3>
+      <div id="map" class="map"></div>
+      <script >var map, directionsService, directionsRenderer;
+        var startInput, destinationInput;
+        var startAutocomplete, destinationAutocomplete;
+        var map;
+        var directionsRenderers = {};
+        
+        function initMap() {
+          map = new google.maps.Map(document.getElementById("map"), {
+            center: { lat: -34.397, lng: 150.644 },
+            zoom: 14,
+          });
+        
+          const apiKey = "2bd18ea9a26577a70b21257655bf8d18"; // Replace with your OpenWeatherMap API key
+        
+         
+        
+          // Add this function to fetch and display the user's email
+          function fetchUserEmail() {
+            fetch("/user-email")
+              .then((response) => response.json())
+              .then((data) => {
+                if (data.success) {
+                  document.getElementById("user-email").innerText = data.email;
+                } else {
+                  console.error("Error fetching user email:", data.message);
+                }
+              })
+              .catch((error) => console.error("Error fetching user email:", error));
+          }
+        
+          // Call the fetchUserEmail function when the page loads
+          fetchUserEmail();
+        
+          directionsService = new google.maps.DirectionsService();
+          directionsRenderer = new google.maps.DirectionsRenderer({ map: map });
+        
+          // Create a separate DirectionsRenderer for each travel mode
+          var modeColors = {
+            DRIVING: "#FF0000",
+            TRANSIT: "#0000FF",
+            BICYCLING: "#00FF00",
+            WALKING: "#FFA500",
+          };
+        
+          // Request the user's location
+          if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(handleUserPosition, function () {
+              handleLocationError(true, map.getCenter());
+            });
+          } else {
+            // Browser doesn't support Geolocation
+            handleLocationError(false, map.getCenter());
+          }
+        
+          for (var mode in modeColors) {
+            directionsRenderers[mode] = new google.maps.DirectionsRenderer({
+              map: map,
+              polylineOptions: {
+                strokeColor: modeColors[mode],
+                strokeOpacity: 0.7,
+                strokeWeight: 5,
+              },
+            });
+          }
+        
+          document.addEventListener("DOMContentLoaded", () => {
+            const userEmail = document.querySelector("#userEmail");
+            const logoutButton = document.querySelector("#logout");
+        
+            // Fetch the user's email
+            fetch("/user-email")
+              .then((response) => response.json())
+              .then((data) => {
+                if (data.success) {
+                  userEmail.textContent = data.email;
+                } else {
+                  console.error("Error fetching email:", data.message);
+                }
+              })
+              .catch((error) => console.error("Error fetching email:", error));
+        
+            // Logout button event listener
+            logoutButton.addEventListener("click", () => {
+              fetch("/logout", {
+                method: "POST",
+              })
+                .then((response) => response.json())
+                .then((data) => {
+                  if (data.success) {
+                    window.location.href = "/login";
+                  } else {
+                    alert("Error logging out");
+                  }
+                })
+                .catch((error) => {
+                  console.error("Error logging out:", error);
+                });
+            });
+          });
+        
+          startInput = document.getElementById("start");
+          destinationInput = document.getElementById("destination");
+          weatherCityInput = document.getElementById("city-search");
+        
+          startAutocomplete = new google.maps.places.Autocomplete(startInput);
+          destinationAutocomplete = new google.maps.places.Autocomplete(
+            destinationInput
+          );
+          weatherCityAutocomplete = new google.maps.places.Autocomplete(
+            weatherCityInput
+          );
+        }
+        
+        function handleUserPosition(position) {
+          var userLatLng = new google.maps.LatLng(
+            position.coords.latitude,
+            position.coords.longitude
+          );
+          map.setCenter(userLatLng);
+        
+          var marker = new google.maps.Marker({
+            position: userLatLng,
+            map: map,
+            title: "Current Location",
+          });
+        
+          var startAutocomplete = new google.maps.places.Autocomplete(startInput);
+          startAutocomplete.setFields(["place_id"]);
+          startAutocomplete.bindTo("bounds", map);
+        
+          startAutocomplete.set(
+            "place",
+            new google.maps.places.PlaceResult({ place_id: "current_location" })
+          );
+          startInput.value = "Current Location";
+        }
+        
+        function displayLabels() {
+          var labels = "<p><strong>Labels:</strong></p>";
+          labels += '<span style="color: #FF0000;">Driving</span><br>';
+          labels += '<span style="color: #0000FF;">Public Transit</span><br>';
+          labels += '<span style="color: #00FF00;">Bicycling</span><br>';
+          labels += '<span style="color: #FFA500;">Walking</span><br>';
+          document.getElementById("labels").innerHTML = labels;
+        }
+        
+        function calculateCaloriesBurned(mode, duration) {
+          var caloriesPerMinute;
+          var userWeight = 70; // Assume an average user weight of 70 kg
+        
+          switch (mode) {
+            case google.maps.TravelMode.DRIVING:
+              caloriesPerMinute = 0.05; // Driving: about 0.05 calories per minute per kg
+              break;
+            case google.maps.TravelMode.TRANSIT:
+              caloriesPerMinute = 0.1; // Public transit: about 0.1 calories per minute per kg
+              break;
+            case google.maps.TravelMode.BICYCLING:
+              caloriesPerMinute = 8; // Bicycling: about 8 calories per minute per kg
+              break;
+            case google.maps.TravelMode.WALKING:
+              caloriesPerMinute = 3.3; // Walking: about 3.3 calories per minute per kg
+              break;
+            default:
+              caloriesPerMinute = 0;
+          }
+        
+          var caloriesBurned = ((userWeight * duration.value) / 60) * caloriesPerMinute;
+          console.log(caloriesBurned);
+          return caloriesBurned;
+        }
+        
+        function findBestRoute(results) {
+          var transitResult, drivingResult, bicyclingResult, walkingResult;
+        
+          results.forEach(function (result) {
+            if (result.travelMode === google.maps.TravelMode.TRANSIT) {
+              transitResult = result;
+            }
+            if (result.travelMode === google.maps.TravelMode.DRIVING) {
+              drivingResult = result;
+            }
+            if (result.travelMode === google.maps.TravelMode.BICYCLING) {
+              bicyclingResult = result;
+            }
+            if (result.travelMode === google.maps.TravelMode.WALKING) {
+              walkingResult = result;
+            }
+          });
+        
+          if (bicyclingResult && bicyclingResult.duration.value / 60 <= 60) {
+            return bicyclingResult;
+          }
+        
+          if (walkingResult && walkingResult.duration.value / 60 <= 30) {
+            return walkingResult;
+          }
+        
+          if (transitResult && drivingResult) {
+            var timeDifference =
+              Math.abs(transitResult.duration.value - drivingResult.duration.value) /
+              60;
+        
+            if (timeDifference <= 45) {
+              var transitEmissions = calculateCarbonEmissions(
+                transitResult.travelMode,
+                transitResult.distance.value
+              );
+              var drivingEmissions = calculateCarbonEmissions(
+                drivingResult.travelMode,
+                drivingResult.distance.value
+              );
+        
+              return transitEmissions < drivingEmissions
+                ? transitResult
+                : drivingResult;
+            }
+          }
+        
+          var bestResult = transitResult || drivingResult;
+          var bestValue = Number.MAX_VALUE;
+          [transitResult, drivingResult, bicyclingResult, walkingResult].forEach(
+            function (result) {
+              if (result) {
+                var timeFactor = result.duration.value;
+                var emissionsFactor = calculateCarbonEmissions(
+                  result.travelMode,
+                  result.distance.value
+                );
+                var combinedValue = timeFactor + emissionsFactor;
+        
+                if (combinedValue < bestValue) {
+                  bestResult = result;
+                  bestValue = combinedValue;
+                }
+              }
+            }
+          );
+        
+          return bestResult;
+        }
+        
+        function calculateDistances() {
+          
+          const startInput = document.getElementById('start'); 
+          const destinationInput = document.getElementById('destination');
+          const warningMessage = document.getElementById('warning-message');
+
+
+          var start = startInput.value.trim();
+          var destination = destinationInput.value.trim();
+
+
+          if (start === '' || destination === '') {
+              warningMessage.style.display = 'inline';
+              warningMessage.textContent = 'Please enter both start and destination.';
+          return;
+          } 
+          else {
+            warningMessage.style.display = 'none';
+          }
+          var service = new google.maps.DistanceMatrixService();
+        
+          // Define travel modes
+          var travelModes = [
+            google.maps.TravelMode.DRIVING,
+            google.maps.TravelMode.TRANSIT,
+            google.maps.TravelMode.BICYCLING,
+            google.maps.TravelMode.WALKING,
+          ];
+        
+          // Loop through travel modes and get distance and time
+          var promises = travelModes.map(function (travelMode) {
+            return new Promise(function (resolve, reject) {
+              service.getDistanceMatrix(
+                {
+                  origins: [start],
+                  destinations: [destination],
+                  travelMode: travelMode,
+                  unitSystem: google.maps.UnitSystem.METRIC,
+                },
+                function (response, status) {
+                  if (status === google.maps.DistanceMatrixStatus.OK) {
+                    var result = response.rows[0].elements[0];
+                    resolve({
+                      travelMode: travelMode,
+                      distance: result.distance,
+                      duration: result.duration,
+                    });
+                  } else {
+                    reject(status);
+                  }
+                }
+              );
+            });
+          });
+        
+          Promise.all(promises)
+            .then(function (results) {
+              results.forEach(function (result) {
+                var renderer = directionsRenderers[result.travelMode];
+                var route = {
+                  origin: start,
+                  destination: destination,
+                  travelMode: result.travelMode,
+                };
+                directionsService.route(route, function (response, status) {
+                  if (status === google.maps.DirectionsStatus.OK) {
+                    renderer.setDirections(response);
+                  } else {
+                    console.error("Error:", status);
+                  }
+                });
+              });
+              displayResults(results);
+              displayLabels();
+            })
+            .catch(function (error) {
+              console.error("Error:", error);
+            });
+        }
+
+
+        function displayResults(results) {
+  var cardsContainer = "<div id='cards-container'>";
+  var bestRoute = findBestRoute(results);
+
+  results.forEach(function (result) {
+    var mode = result.travelMode;
+    var distance = result.distance.text;
+    var duration = result.duration.text;
+    var emissions = calculateCarbonEmissions(mode, result.distance.value);
+    var caloriesBurned = calculateCaloriesBurned(mode, result.duration);
+    var bestRouteMarker = bestRoute.travelMode === mode ? " (Best Route)" : "";
+    saveSearchHistory(startInput.value, destinationInput.value, mode, distance, duration, emissions, caloriesBurned);
+
+    var modeIcon;
+    switch (mode) {
+      case "DRIVING":
+        modeIcon = "<i class='fas fa-car'></i>";
+        break;
+      case "WALKING":
+        modeIcon = "<i class='fas fa-walking'></i>";
+        break;
+      case "BICYCLING":
+        modeIcon = "<i class='fas fa-bicycle'></i>";
+        break;
+      case "TRANSIT":
+        modeIcon = "<i class='fas fa-bus'></i>";
+        break;
+      default:
+        modeIcon = "";
+    }
+
+    var card =
+      "<div class='card'>" +
+      "<h3>"+ modeIcon + " " + mode + bestRouteMarker + "</h3>" +
+      "<p>Distance: " + distance + "</p>" +
+      "<p>Duration: " + duration + "</p>" +
+      "<p>Carbon Emissions: " + emissions.toFixed(2) + " kg CO2</p>" +
+      "<p>Calories Burned: " + caloriesBurned.toFixed(0) + " kcal</p>" +
+      "</div>";
+
+    cardsContainer += card;
+  });
+
+  cardsContainer += "</div>";
+  document.getElementById("results").innerHTML = cardsContainer;
+}
+
+
+        
+let emissionValues = {};
+
+fetch('/api/emission-values')
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      data.data.forEach(item => {
+        emissionValues[item.mode] = parseFloat(item.emissions_per_meter);
+      });
+    } else {
+      console.error('Error fetching emission values');
+    }
+  })
+  .catch(err => {
+    console.error('Error fetching emission values', err);
+  });
+
+function calculateCarbonEmissions(mode, distance) {
+  const emissionsPerMeter = emissionValues[mode] || 0;
+  return distance * emissionsPerMeter;
+}
+
+
+function saveSearchHistory(origin, destination, mode, distance, duration, emissions, caloriesBurned) {
+  fetch('/api/search-history', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      origin,
+      destination,
+      mode,
+      distance,
+      duration,
+      emissions,
+      caloriesBurned,
+    }),
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      if (!data.success) {
+        console.error('Error saving search history:', data.message);
+      }
+    })
+    .catch((error) => {
+      console.error('Error saving search history:', error);
+    });
+}
+        </script>
+      <script></script>
+      <script async defer
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCmyM3iDW4kBx43kOCTxc33TNNVA960enk&libraries=places&callback=initMap"></script>
+  </body>
+  <%- include('footer') %>
+  </html>
+
+

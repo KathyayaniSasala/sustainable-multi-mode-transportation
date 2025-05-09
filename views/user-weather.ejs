@@ -1,0 +1,247 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   
+    <title>Weather</title>
+   <style>
+     body {
+      background-image: url('https://img.freepik.com/free-photo/luxury-plain-green-gradient-abstract-studio-background-empty-room-with-space-your-text-picture_1258-102077.jpg?w=1380&t=st=1682527312~exp=1682527912~hmac=e648eff1c39840065e98cb823d454c2f3fab3508e94e332b4890bc9fdac92de8'); 
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      background-size: cover;
+     
+    }
+    
+   
+body
+{
+    margin: 0px;
+    padding: 0px;
+    box-sizing: border-box;
+    background-color: rgb(173, 228, 219) !important;
+}
+.mapouter{
+position:relative;
+text-align:right;padding-top: 5px;
+}
+.gmap_canva
+
+{
+overflow:hidden;
+background:none!important;
+height:400px;
+width:600px;
+}
+.week_box
+{
+display: grid;
+grid-template-columns: repeat(7,1fr);
+grid-gap: 20px;
+text-align: center;
+}
+.box
+{
+box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
+border-radius: 10px;
+}
+.week_box>div:hover
+{
+border: 1px solid gray;
+box-shadow: rgb(38, 57, 77) 0px 20px 30px -10px;
+}
+#navbar
+{
+display: flex;
+justify-content: space-around;
+font-size: 2em;
+font-weight: bolder;
+background-color: rgb(173, 228, 219) ;
+align-items: center;
+height: 70px;
+
+}
+#navbar>div
+{
+ display: inline-block;
+}
+#navbar>span>input
+{
+font-size: 0.6em;
+}
+#navbar>span>button
+{
+font-size: 0.6em;
+}
+#mshow
+{
+display: grid;
+grid-template-columns: repeat(2,1fr);
+grid-template-rows: 350px;
+padding: 0px 5px;
+font-size: 1.1em;
+}
+#show
+{
+width: auto;
+margin: auto 5%;
+}
+#container
+{
+background-image: url("https://img.freepik.com/free-vector/gorgeous-clouds-background-with-blue-sky-design_1017-25501.jpg?w=740");
+background-repeat: no-repeat;
+background-size: cover;
+min-height: 700px;
+}
+    
+    </style>
+</head>
+<body>
+    <%- include('header') %>
+    <div id="navbar">
+        <h3>Know Your Weather</h3>
+        <span>
+            <input type="text" id="city" placeholder="Enter city" value="">
+            <button onclick="getWeatherData()">Search</button>
+        </span>
+    </div>
+
+    
+    <div id="container">
+        <div id="mshow">
+            <div id="show">
+            </div>
+            <div class="mapouter">
+                <div class="gmap_canvas"><iframe width="600" height="320" id="gmap_canvas"  frameborder="0" scrolling="no" marginheight="0" marginwidth="0"></iframe><br>
+                </div>
+            </div>
+        </div>
+        <div id="forecast">
+            
+        </div>
+        
+        
+    </div>
+
+
+    <%- include('footer') %>
+   
+</body>
+<script>
+    let key ="3a4a39b4b863bc3e8f550696322a998b"
+let cnt =7;
+
+async function getWeatherData()
+{
+    try {
+    let city=document.getElementById("city").value || "Boca Raton";
+    let res = await fetch(`https://api.openweathermap.org/data/2.5/forecast?q=${city}&cnt=7&appid=${key}&units=metric`);
+  
+    let data = await res.json();
+    // console.log("data : ",data)
+
+    showWeather(data);
+    }
+    catch(err)
+    {
+        console.log("err",err)
+    }
+}
+
+function showWeather(d)
+{
+    console.log(d)
+
+    let frame = document.createElement("div")
+
+    let name = document.createElement("p")
+    name.innerText = `City : ${d.city.name}`;
+
+    
+    let sunrise = document.createElement("p")
+    let rise_val = new Date(d.city.sunrise*1000)
+    let rise_time = rise_val.toLocaleTimeString();
+    sunrise.innerText = `Sunrise : ${rise_time}`;
+
+    let c_date = document.createElement("p")
+    c_date.innerText = `Date : ${rise_val.toLocaleDateString()}`;
+    
+    let sunset = document.createElement("p")
+    let set_val = new Date(d.city.sunset*1000)
+    let set_time = set_val.toLocaleTimeString();
+    sunset.innerText = `Sunset : ${set_time}`;
+    
+    let feel_like = document.createElement("p")
+    feel_like.innerText= `Feels Like : ${d.list[0].main.feels_like}°C`
+    
+    let max_temp = document.createElement("p")
+    max_temp.innerText= `Max Temp : ${d.list[0].main.temp_max}°C`
+
+    let min_temp = document.createElement("p")
+    min_temp.innerText= `Min Temp : ${d.list[0].main.temp_min}°C`
+
+    let humidity = document.createElement("p")
+    humidity.innerText= `Humidity : ${d.list[0].main.humidity}`
+
+    let curr_pressure = document.createElement("p")
+    curr_pressure.innerText= `Pressure : ${d.list[0].main.pressure}`
+    
+    let week_box = document.createElement("div")
+    week_box.setAttribute("class","week_box")
+    
+    for(let i=0;i<d.list.length;i++)
+    {
+        var box = document.createElement("div")
+        box.setAttribute("class","box")
+        
+        let icon = document.createElement("img")
+        icon.src = `http://openweathermap.org/img/wn/${d.list[i].weather[0].icon}@2x.png`
+
+        let cdes = document.createElement("div")
+        cdes.style.textTransform = "capitalize";
+        cdes.innerText = (d.list[i].weather[0].description)
+
+        let line = document.createElement("hr")
+
+        let max_temp = document.createElement("p")
+        max_temp.innerText = `Max Temp : ${d.list[i].main.temp_max}°C`;
+
+        let min_temp = document.createElement("p")
+        min_temp.innerText = `Min Temp : ${d.list[i].main.temp_min}°C`;
+        
+        let humidity = document.createElement("p")
+        humidity.innerText = `Humidity : ${d.list[i].main.humidity}`;
+        
+        let pressure = document.createElement("p")
+        pressure.innerText = `Pressure : ${d.list[i].main.pressure}`;
+
+        // console.log(icon,cdes,max_temp,min_temp,humidity,pressure)
+        
+        box.append(icon,cdes,line,max_temp,min_temp)        
+        // box.append(icon,cdes,line,max_temp,min_temp,humidity,pressure)        
+        week_box.append(box)        
+    }
+    frame.append(name,c_date,sunrise,sunset,feel_like,min_temp,max_temp,humidity,curr_pressure)  
+
+    // console.log(name,sunrise,sunset,feel_like,min_temp,max_temp,humidity,curr_pressure)
+    // console.log(week_box) 
+
+    document.getElementById("show").innerHTML="";
+    document.getElementById("show").append(frame)
+        
+    document.getElementById("forecast").innerHTML="";
+    document.getElementById("forecast").append(week_box)
+
+    let map = document.getElementById("gmap_canvas")
+    map.src = `https://maps.google.com/maps?q=${d.city.name}&t=&z=13&ie=UTF8&iwloc=&output=embed`
+
+}
+
+
+getWeatherData()
+
+</script>
+</html>

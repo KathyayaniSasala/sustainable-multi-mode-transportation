@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Welcome</title>
+  
+<link href="https://cdn.syncfusion.com/ej2/21.1.35/ej2-icons/styles/bootstrap5.css" rel="stylesheet" />
+<link href="/fa/font-awesome.css" rel="stylesheet" type="text/css">
+
+  <script>
+   async function confirmChangeRole(button) {
+    const userId = button.getAttribute('data-user-id');
+    const newRole = button.getAttribute('data-role');
+    if (confirm(`Are you sure you want to change the role of user #${userId} to ${newRole}?`)) {
+        const response = await fetch('/admin-actions/change-role', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({
+                userId: userId,
+                newRole: newRole
+            }),
+            credentials: 'same-origin'
+        });
+
+        const result = await response.json();
+        if (result.success) {
+            alert(result.message);
+            location.reload();
+        } else {
+            alert(result.message);
+        }
+    }
+}
+
+async function confirmDeleteUser(button) {
+    const userId = button.getAttribute('data-user-id');
+    if (confirm(`Are you sure you want to delete user #${userId}?`)) {
+        const response = await fetch('/admin-actions/delete-user', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({
+                userId: userId
+            }),
+            credentials: 'same-origin'
+        });
+
+        const result = await response.json();
+        if (result.success) {
+            alert(result.message);
+            location.reload();
+        } else {
+            alert(result.message);
+        }
+    }
+}
+
+
+</script>
+<style>
+   body {
+    
+      background-image: url('https://img.freepik.com/free-photo/luxury-plain-green-gradient-abstract-studio-background-empty-room-with-space-your-text-picture_1258-102077.jpg?w=1380&t=st=1682527312~exp=1682527912~hmac=e648eff1c39840065e98cb823d454c2f3fab3508e94e332b4890bc9fdac92de8'); 
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      background-size: cover;
+     
+   
+    }
+
+ h2{
+  margin: 20px;
+ }
+   h6{
+    margin: 20px;
+   }
+    th,
+    td {
+      border: 1px solid #000;
+      padding: 15px;
+      text-align: left;
+    
+    }
+    th {
+      background-color: #f2f2f2;
+      font-weight: bold;
+    }
+    tr {
+      height: 60px;
+    }
+    td {
+      text-align: center;
+      padding: 20px;
+      width: 1%;
+    }
+    tr th {
+      text-align: center;
+    }
+    table{
+       margin: 20px;
+    }
+    tr:nth-child(even) {
+  background-color: #D6EEEE;
+}
+    
+.e-paste:before {
+    content:'e355';
+}
+ 
+
+  .toast {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    z-index: 9999;
+  }
+  
+
+</style>
+</head>
+<body>
+ 
+  <%- include('header') %>
+  <h2 style="font-family:'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif">Welcome, <%= user.first_name %> <%= user.last_name %>!</h2>
+  <h6>You are logged in as an Admin.</h6>
+  <!-- <p>Username: <%= user.user_name %></p>
+  <p>Email: <%= user.email %></p>
+  <p>Mobile Number: <%= user.mob_no %></p>
+  <p>Role: <%= user.role %></p> -->
+
+<h2>Emissions Table</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Mode</th>
+        <th>Emissions per Meter</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% emissionValues.forEach((value) => { %>
+        <tr>
+          <td><%= value.mode %></td>
+          <td><%= value.emissions_per_meter %></td>
+          <td>
+            <form action="/update-emission-value/<%= value.id %>" method="POST" onsubmit="handleSubmit(event)">
+                <input type="number" name="emissions_per_meter" step="0.00001" value="<%= value.emissions_per_meter %>">
+                <button type="submit">Update</button>
+              </form>              
+          </td>
+        </tr>
+      <% }); %>
+    </tbody>
+  </table>
+  
+  
+  <h2>Users Table</h2>
+
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Username</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        <% users.forEach(user => { %>
+            <tr>
+                <td><%= user.id %></td>
+                <td><%= user.user_name %></td>
+                <td><%= user.email %></td>
+                <td><%= user.role %></td>
+                <td>
+                    <% if (user.role === 'user') { %>
+                        <button data-user-id="<%= user.id %>" data-role="admin" onclick="confirmChangeRole(this)">Make Admin</button>
+                    <% } else if (user.role === 'admin') { %>
+                        <button data-user-id="<%= user.id %>" data-role="user" onclick="confirmChangeRole(this)">Make User</button>
+                    <% } %>
+                    <button data-user-id="<%= user.id %>" onclick="confirmDeleteUser(this)">Delete</button>
+                    
+                </td>
+            </tr>
+        <% }); %>
+    </tbody>
+</table>
+
+<%- include('footer') %>
+
+</body>
+<script>
+   
+  function showToast(message) {
+    const toast = document.createElement('div');
+    toast.textContent = message;
+    toast.classList.add('toast');
+    document.body.appendChild(toast);
+    setTimeout(() => {
+      toast.remove();
+    }, 3000);
+  }
+
+  // Show a toast message based on the query parameters
+  document.addEventListener('DOMContentLoaded', function () {
+    const successMessage = '<%= success || "" %>';
+    const errorMessage = '<%= error || "" %>';
+
+
+    if (successMessage) {
+      showToast('Update successful');
+    }
+
+    if (errorMessage) {
+      showToast('Update failed');
+    }
+  });
+
+
+
+  async function handleSubmit(event) {
+  event.preventDefault();
+  const form = event.target;
+  const formData = new FormData(form);
+
+  const response = await fetch(form.action, {
+    method: form.method,
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    },
+    body: JSON.stringify(Object.fromEntries(formData)),
+    credentials: 'same-origin',
+  });
+
+  const result = await response.json();
+  if (result.success) {
+    showToast(result.message);
+    // location.reload();
+  } else {
+    showToast(result.message);
+  }
+}
+
+
+
+
+
+</script>
+
+ 
+  
+</html>

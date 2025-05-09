@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search History</title>
+   <style>
+     body {
+      background-image: url('https://img.freepik.com/free-photo/luxury-plain-green-gradient-abstract-studio-background-empty-room-with-space-your-text-picture_1258-102077.jpg?w=1380&t=st=1682527312~exp=1682527912~hmac=e648eff1c39840065e98cb823d454c2f3fab3508e94e332b4890bc9fdac92de8'); 
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      background-size: cover;
+     
+    }
+   </style>  
+    <style>
+    h2{
+        margin: 20px;
+       
+      }
+    
+    th,td {
+      border: 1px solid #000;
+      text-align: left;
+    }
+    th {
+      background-color:#f2f2f2;
+      font-weight: bold;
+    }
+    tr {
+      height: 60px;
+    }
+    td {
+      text-align: center;
+      padding: 20px;
+      width: 10%;
+    }
+    tr th {
+      text-align: center;
+    }
+    
+    table{
+      margin: 20px;
+    }
+    tr:nth-child(even) {
+  background-color: #D6EEEE;
+}
+    </style>
+</head>
+<body>
+  <%- include('header') %>
+
+  
+    <h2 style="font-family:'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif">Search History</h2>
+    <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Origin</th>
+            <th>Destination</th>
+            <th>Mode</th>
+            <th>Distance</th>
+            <th>Duration</th>
+            <th>Carbon Emissions</th>
+            <!-- <th>Calories Burned</th> -->
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% history.forEach(item => { %>
+            <tr>
+              <td><%= item.id %></td>
+              <td><%= item.origin %></td>
+              <td><%= item.destination %></td>
+              <td><%= item.mode %></td>
+              <td><%= item.distance %></td>
+              <td><%= item.duration %></td>
+              <td><%= typeof item.emissions === 'number' ? item.emissions.toFixed(2) + ' kg CO2' : item.emissions %></td>
+              <!-- <td><%= typeof item.calories === 'number' ? item.calories.toFixed(0) + ' kcal' : item.calories %></td> -->
+              <td><%= item.created_at.toLocaleString() %></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>  
+    </body>
+      <%- include('footer') %>    
+    <!-- <a href="/welcome">Back to user welcome page</a> -->
+
+</html>
